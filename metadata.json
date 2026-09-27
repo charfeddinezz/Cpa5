@@ -1,0 +1,7 @@
+{
+  "name": "SmartAuto Browser Orchestrator",
+  "description": "Intelligent automation engine for multi-tab browser tasks, optimizing proxy management, click behavior, and dynamic content analysis for peak performance.",
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
