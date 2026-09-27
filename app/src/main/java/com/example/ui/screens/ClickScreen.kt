@@ -88,6 +88,7 @@ import com.example.ui.theme.CpaPrimaryBorder
 import com.example.ui.theme.CpaPrimaryDim
 import com.example.ui.theme.CpaSuccess
 import com.example.ui.theme.CpaText
+import com.example.ui.theme.CpaTextDim
 import com.example.ui.theme.CpaTextMuted
 import com.example.ui.theme.CpaWarning
 

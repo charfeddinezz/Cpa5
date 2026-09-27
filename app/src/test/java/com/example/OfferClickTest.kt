@@ -98,4 +98,13 @@ class OfferClickTest {
         assertTrue(script.contains("window.AndroidBridge.onOfferClicked"))
         assertTrue(script.contains("PRIORITY #1 - OFFER CLICK"))
     }
+
+    @Test
+    fun lockerActivatorWaitsForAsynchronousLockerScripts() {
+        val script = AutomationScriptBuilder.buildCpaLockerDetectorAndActivatorScript()
+
+        assertTrue(script.contains("var triggerAttempts = 0"))
+        assertTrue(script.contains("triggerAttempts < 20"))
+        assertTrue(script.contains("clearInterval(triggerTimer)"))
+    }
 }

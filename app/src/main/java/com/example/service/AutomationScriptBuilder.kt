@@ -2698,7 +2698,9 @@ true;
       }
 
       if ($forceTrigger) {
-        setTimeout(function() {
+        var triggerAttempts = 0;
+        var triggerTimer = setInterval(function() {
+          triggerAttempts++;
           var triggered = false;
           if (typeof window.call_locker === 'function') {
             try { window.call_locker(); triggered = true; } catch(e) {}
@@ -2709,6 +2711,9 @@ true;
           } else if (typeof window.load_slidepage === 'function') {
             try { window.load_slidepage(); triggered = true; } catch(e) {}
           }
+
+          if (!triggered && triggerAttempts < 20) return;
+          clearInterval(triggerTimer);
 
           // Unhide & bring to front any locker elements
           var lockerSelectors = [

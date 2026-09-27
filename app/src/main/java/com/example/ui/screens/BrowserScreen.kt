@@ -264,6 +264,20 @@ fun BrowserScreen(
         onOfferClickedInNewTab?.invoke(tabTitle, targetUrl, newId)
     }
 
+    val openPopupInNewTab: (String) -> Unit = { targetUrl ->
+        val newId = "tab_${UUID.randomUUID()}"
+        val newTab = BrowserTabModel(
+            id = newId,
+            title = "New Tab",
+            url = targetUrl
+        )
+        tabs.add(newTab)
+        activeTabId = newId
+        currentDisplayUrl = targetUrl
+        urlInput = targetUrl
+        onActiveTabChanged?.invoke(newId)
+    }
+
     // Synchronize URL input with active tab
     LaunchedEffect(activeTabId, activeTab.url) {
         urlInput = if (activeTab.url == "about:blank") "" else activeTab.url
@@ -1104,7 +1118,7 @@ fun BrowserScreen(
                                     cacheMode = WebSettings.LOAD_DEFAULT
                                     useWideViewPort = true
                                     loadWithOverviewMode = true
-                                    javaScriptCanOpenWindowsAutomatically = true
+                                    javaScriptCanOpenWindowsAutomatically = false
                                     databaseEnabled = true
                                     setSupportMultipleWindows(true)
                                     mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
@@ -1235,26 +1249,36 @@ fun BrowserScreen(
                                         isUserGesture: Boolean,
                                         resultMsg: Message?
                                      ): Boolean {
+                                         if (!isUserGesture) return false
                                          val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
-                                         val tempWebView = WebView(view?.context ?: return false)
-                                         tempWebView.webViewClient = object : WebViewClient() {
-                                             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                                                 val targetUrl = request?.url?.toString()
-                                                 if (!targetUrl.isNullOrBlank()) {
-                                                     openInNewTab(targetUrl, "Offer: " + (view?.title?.take(15) ?: "New Tab"))
-                                                 }
-                                                 return true
-                                             }
-                                             @Deprecated("Deprecated in Java")
-                                             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                                                 if (!url.isNullOrBlank()) {
-                                                     openInNewTab(url, "Offer: " + (view?.title?.take(15) ?: "New Tab"))
-                                                 }
-                                                 return true
-                                             }
+                                         val context = view?.context ?: return false
+                                         val popupRelay = WebView(context)
+                                         var popupHandled = false
+
+                                         fun openPopup(url: String?): Boolean {
+                                             val uri = url?.takeIf { it.isNotBlank() }?.let(android.net.Uri::parse) ?: return true
+                                             if ((uri.scheme != "http" && uri.scheme != "https") || popupHandled) return true
+                                             popupHandled = true
+                                             openPopupInNewTab(uri.toString())
+                                             popupRelay.post { popupRelay.destroy() }
+                                             return true
                                          }
-                                         transport.webView = tempWebView
+
+                                         popupRelay.settings.javaScriptEnabled = true
+                                         popupRelay.settings.domStorageEnabled = true
+                                         popupRelay.webViewClient = object : WebViewClient() {
+                                             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean =
+                                                 openPopup(request?.url?.toString())
+
+                                             @Deprecated("Deprecated in Java")
+                                             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean =
+                                                 openPopup(url)
+                                         }
+                                         transport.webView = popupRelay
                                          resultMsg.sendToTarget()
+                                         popupRelay.postDelayed({
+                                             if (!popupHandled) popupRelay.destroy()
+                                         }, 15_000L)
                                          return true
                                      }
                                 }
